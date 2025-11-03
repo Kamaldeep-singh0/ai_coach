@@ -150,6 +150,77 @@ bot.command('complete', async (ctx) => {
   }
 });
 
+bot.command('week', async (ctx) => {
+  const telegramId = ctx.message.from.id.toString();
+  await ctx.reply('Analyzing your progress for the last 7 days...');
+
+  try {
+    // 1. Get the date for 7 days ago
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    // 2. Find goals completed in the last 7 days
+    const completedGoals = await Goal.find({
+      telegramId: telegramId,
+      isCompleted: true,
+      createdAt: { $gte: oneWeekAgo } // 'createdAt' is the key
+    });
+
+    // 3. Find all currently active goals
+    const activeGoals = await Goal.find({
+      telegramId: telegramId,
+      isCompleted: false
+    });
+
+    // 4. Build the report for the AI
+    let report = "Here is my student's weekly report:\n\n";
+    report += `COMPLETED GOALS (Last 7 Days): ${completedGoals.length}\n`;
+    if (completedGoals.length > 0) {
+      completedGoals.forEach(goal => {
+        report += `- ${goal.description}\n`;
+      });
+    }
+
+    report += `\nACTIVE GOALS (Outstanding): ${activeGoals.length}\n`;
+    if (activeGoals.length > 0) {
+      activeGoals.forEach(goal => {
+        report += `- ${goal.description}\n`;
+      });
+    }
+
+    // 5. Send the report to Gemini for analysis
+    const systemInstruction = `
+      ${baseSystemPrompt}
+      You are now in "Weekly Review" mode. 
+      Analyze the following progress report for your student.
+      Give them a strict, no-excuses analysis of their performance.
+      - If they did well, be firm but acknowledge the progress.
+      - If they did poorly, be direct about their lack of focus.
+      Conclude by telling them what their #1 priority should be for the week ahead.
+    `;
+
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-pro",
+      safetySettings,
+      systemInstruction
+    });
+
+    // We don't need chat history for this one-off report
+    const result = await model.generateContent(report);
+    const aiAnalysis = result.response.text();
+
+    if (!aiAnalysis) {
+      return ctx.reply("I had trouble analyzing your report. Looks like I'm off my game.");
+    }
+
+    ctx.reply(aiAnalysis);
+
+  } catch (error) {
+    console.error("Error in /week command:", error);
+    ctx.reply("Sorry, I had trouble generating your weekly report.");
+  }
+});
+
 
 // 5. Handle *any* text message (FINAL UPGRADED LOGIC)
 bot.on('text', async (ctx) => {
@@ -172,6 +243,11 @@ bot.on('text', async (ctx) => {
       role: doc.role,
       parts: [{ text: doc.parts }],
     }));
+
+    while (chatHistory.length > 0 && chatHistory[0].role !== 'user') {
+      console.log("Cleaning corrupted history: removing leading 'model' message.");
+      chatHistory.shift(); // .shift() removes the first element
+    }
 
     const goals = await Goal.find({ telegramId, isCompleted: false });
     let goalContext = "User has no active goals. Ask them to set one with /setgoal.";
