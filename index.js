@@ -7,6 +7,7 @@ require('dotenv').config();
 const { Telegraf, Markup } = require('telegraf');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const mongoose = require('mongoose');
+const http = require('http');
 
 // 3. Initialize the Bot and AI
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
@@ -301,5 +302,15 @@ bot.on('text', async (ctx) => {
 
 // 6. Launch the bot
 bot.launch();
+
+const PORT = process.env.PORT || 10000;
+
+http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.write('Coach bot is alive and listening!');
+  res.end();
+}).listen(PORT, () => {
+  console.log(`Health check server running on port ${PORT}`);
+});
 
 console.log('AI Coach Bot is running... (Version 4: Cleaner Prompts)');
