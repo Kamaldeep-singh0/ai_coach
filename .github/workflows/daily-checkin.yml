@@ -1,0 +1,35 @@
+# .github/workflows/daily-checkin.yml
+
+name: Daily 9AM Check-in
+
+on:
+  # This runs the job on a schedule
+  schedule:
+    # This is 9:00 AM in India (IST), which is 3:30 AM UTC
+    - cron: '30 3 * * *'
+  # This also adds a button in GitHub to run it manually (for testing)
+  workflow_dispatch:
+
+jobs:
+  run-checkin-script:
+    runs-on: ubuntu-latest # Use a standard virtual machine
+    steps:
+      - name: 1. Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Use a modern version of Node
+
+      - name: 3. Install NPM Packages
+        run: npm install
+
+      - name: 4. Run the Daily Check-in Script
+        run: node dailyCheckin.js
+        # This is where we inject our secrets
+        env:
+          MONGO_DB_URI: ${{ secrets.MONGO_DB_URI }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          MY_TELEGRAM_ID: ${{ secrets.MY_TELEGRAM_ID }}
