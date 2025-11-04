@@ -73,7 +73,7 @@ bot.start(async (ctx) => {
   
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-pro", 
+      model: "gemini-2.0-flash-lite-001", 
       safetySettings,
       systemInstruction // --- NEW: Using the correct field ---
     });
@@ -201,7 +201,7 @@ bot.command('week', async (ctx) => {
     `;
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-pro",
+      model: "gemini-2.0-flash-lite-001",
       safetySettings,
       systemInstruction
     });
@@ -263,7 +263,7 @@ bot.on('text', async (ctx) => {
 
     // 4. Initialize the model and chat session
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-pro",
+      model: "gemini-2.0-flash-lite-001",
       safetySettings,
       systemInstruction // --- THE CLEAN FIX ---
     });
